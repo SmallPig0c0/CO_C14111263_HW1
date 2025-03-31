@@ -28,7 +28,8 @@ for (int i = 0; i < arr_size; i++) {
 
 1. **內嵌組合語言**
    - **載入數據 (`lw`)**：將 `arr[j]` 和 `arr[j+1]` 分別載入 `t0` 和 `t1`。
-   - **比較 (`bge`)**：若 `arr[j] >= arr[j+1]`，則跳過交換。
+   - **比較 (`bge`)**：若 `arr[j] >= arr[j+1]`，則跳過交換。(錯誤)
+    <mark> 應該是前一項小於等於跳過交換</mark>。
    - **交換 (`sw`)**：若 `arr[j] < arr[j+1]`，則交換兩數的位置。
 
 #### **程式碼段 (RISC-V 組合語言)**
@@ -36,7 +37,7 @@ for (int i = 0; i < arr_size; i++) {
 asm volatile (
     "lw t0, 0(%0)\n"        // 載入 arr[j] 到 t0
     "lw t1, 0(%1)\n"        // 載入 arr[j+1] 到 t1
-    "bge t0, t1, 1f\n"      // 若 arr[j] >= arr[j+1]，跳過交換
+    "bge t0, t1, 1f\n"    //若 arr[j] >= arr[j+1]，跳過交換 
     "sw t1, 0(%0)\n"        // arr[j] = arr[j+1]
     "sw t0, 0(%1)\n"        // arr[j+1] = arr[j]
     "1:"
@@ -46,7 +47,14 @@ asm volatile (
 );
 ```
 
+
 ---
+
+![輸出結果](image.png)
+> **圖 1**: (錯誤)排列順序倒反 
+
+**Debug**： 將` "bge t0, t1, 1f\n" `改為 `"ble t0, t1, 1f\n"`
+
 
 ### 2.3 輸出排序結果
 1. **重設指標** `p_a = &arr[0]`。

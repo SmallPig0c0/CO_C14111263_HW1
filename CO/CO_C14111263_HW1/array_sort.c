@@ -41,19 +41,18 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < arr_size - 1; i++) {
         for (int j = 0; j < arr_size - i - 1; j++) {
-            asm volatile(
-                // Your code
-                "lw t0, 0(%0)\n"        // 加載 arr[j] 到 t0
-                "lw t1, 0(%1)\n"        // 加載 arr[j+1] 到 t1
-                "bge t0, t1, 1f\n"      // 如果 arr[j] >= arr[j+1]，跳過交換
-                "sw t1, 0(%0)\n"        // 交換: arr[j] = arr[j+1]
-                "sw t0, 0(%1)\n"        // 交換: arr[j+1] = arr[j]
+            asm volatile (
+                "lw t0, 0(%0)\n"        // 載入 arr[j] 到 t0
+                "lw t1, 0(%1)\n"        // 載入 arr[j+1] 到 t1
+                "ble t0, t1, 1f\n"      // 若 arr[j] >= arr[j+1]，跳過交換
+                "sw t1, 0(%0)\n"        // arr[j] = arr[j+1]
+                "sw t0, 0(%1)\n"        // arr[j+1] = arr[j]
                 "1:"
                 :
-                : "r"(p_a + j), "r"(p_a + j + 1)  // 讀取 arr[j] 和 arr[j+1] 的指標
-                : "t0", "t1", "memory"             // 受影響的暫存器
-            
+                : "r"(p_a + j), "r"(p_a + j + 1)
+                : "t0", "t1", "memory"
             );
+            
         }
     }
     p_a = &arr[0];
