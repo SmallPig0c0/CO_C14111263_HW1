@@ -10,10 +10,36 @@ typedef struct Node {
 void splitList(Node *head, Node **firstHalf, Node **secondHalf)
 {
     asm volatile(
-        /*
-        Block A (splitList), which splits the linked list into two halves
-        */
-        "");
+        // 初始化 slow, fast 和 prev 指針
+        "mv t0, %0\n"                // t0 = head (鏈表的頭節點)
+        "mv t1, t0\n"                // t1 = slow (指向頭部)
+        "mv t2, t0\n"                // t2 = fast (指向頭部)
+        "mv t3, zero\n"              // t3 = prev (初始化為 NULL)
+
+        // 進入循環遍歷鏈表
+        "1:\n"                       // 循環開始
+        "lw t4, 0(t2)\n"             // t4 = fast->next
+        "lw t5, 0(t4)\n"             // t5 = fast->next->next
+        "beqz t5, 2f\n"              // 如果 fast->next->next == NULL，跳出循環 (鏈表結束)
+
+        // 更新 slow 和 fast 指針
+        "addi t1, t1, 4\n"           // slow = slow->next (t1 指向下個節點)
+        "addi t2, t2, 8\n"           // fast = fast->next->next (t2 指向下一個節點的下一個)
+        "mv t3, t1\n"                // prev = slow (prev 指向 slow 節點)
+
+        "j 1b\n"                     // 跳回循環
+
+        "2:\n"                       // 循環結束，進行鏈表分割
+        "sw zero, 0(t3)\n"           // prev->next = NULL (將 slow 前一個節點的 next 設為 NULL)
+
+        // 設置 firstHalf 和 secondHalf
+        "mv %1, t0\n"                // firstHalf = head
+        "mv %2, t1\n"                // secondHalf = slow
+
+        : "=r"(head), "=r"(*firstHalf), "=r"(*secondHalf)  // 輸出：將 firstHalf 和 secondHalf 寫入指定位置
+        : "r"(head)  // 輸入：head 是鏈表的頭節點
+        : "t0", "t1", "t2", "t3", "t4", "t5"  // 影響的暫存器
+    );
 }
 
 // Merge two sorted linked lists
@@ -22,11 +48,55 @@ Node *mergeSortedLists(Node *a, Node *b)
     Node *result = NULL;
     Node *tail = NULL;
 
-    asm volatile(
-        /*
-        Block B (mergeSortedList), which merges two sorted lists into one
-        */
-        "");
+    asm volatile (
+        // 初始化指針
+        "mv t0, %0\n"                // t0 = a (指向鏈表 a)
+        "mv t1, %1\n"                // t1 = b (指向鏈表 b)
+        "mv t2, zero\n"              // t2 = result (初始化結果為 NULL)
+        "mv t3, zero\n"              // t3 = tail (初始化為 NULL)
+
+        // 進入循環比較兩個鏈表的元素
+        "1:\n"
+        "beqz t0, 3f\n"              // 如果 a == NULL，跳到處理剩餘部分
+        "beqz t1, 3f\n"              // 如果 b == NULL，跳到處理剩餘部分
+
+        // 比較 a 和 b 的值，將較小的節點插入到結果鏈表
+        "lw t4, 0(t0)\n"             // t4 = a->data
+        "lw t5, 0(t1)\n"             // t5 = b->data
+        "blt t4, t5, 2f\n"           // 如果 a->data < b->data，跳到處理 a 的情況
+
+        // b 比 a 小，插入 b 到結果中
+        "2:\n"
+        "lw t6, 4(t1)\n"             // t6 = b->next
+        "sw t1, 0(t3)\n"             // tail->next = b
+        "mv t3, t1\n"                // tail = b
+        "mv t1, t6\n"                // b = b->next
+        "j 1b\n"                     // 跳回循環
+
+        // a 比 b 小，插入 a 到結果中
+        "3:\n"
+        "lw t6, 4(t0)\n"             // t6 = a->next
+        "sw t0, 0(t3)\n"             // tail->next = a
+        "mv t3, t0\n"                // tail = a
+        "mv t0, t6\n"                // a = a->next
+
+        // 當循環結束後，剩餘的鏈表可能還有元素
+        "4:\n"
+        "beqz t0, 5f\n"              // 如果 a == NULL，跳到處理 b
+        "sw t0, 0(t3)\n"             // tail->next = a
+        "j 6f\n"
+
+        "5:\n"
+        "beqz t1, 6f\n"              // 如果 b == NULL，跳到結束
+        "sw t1, 0(t3)\n"             // tail->next = b
+
+        "6:\n"
+        "mv %0, t2\n"                // 返回結果鏈表頭部
+
+        : "=r"(result)               // 輸出結果鏈表
+        : "r"(a), "r"(b)             // 輸入鏈表 a 和 b
+        : "t0", "t1", "t2", "t3", "t4", "t5", "t6"  // 使用的暫存器
+    );
 
     return result;
 }
@@ -78,11 +148,27 @@ int main(int argc, char *argv[])
     while (cur) {
         printf("%d ", cur->data);
         asm volatile(
-            /*
-            Block C (Move to the next node), which updates the pointer to
-            traverse the linked list
-            */
-            "");
+            // 初始化 cur
+            "mv t0, %0\n"             // t0 = cur (指向鏈表頭節點)
+        
+            // 循環開始
+            "1:\n"
+            "beqz t0, 2f\n"           // 如果 cur 為 NULL，跳到循環結束
+        
+            // 打印 cur->data
+            "lw t1, 0(t0)\n"          // t1 = cur->data (加載 cur 的數據)
+            "li a0, 1\n"              // 設置 printf 的輸出格式為整數
+            "ecall\n"                 // 調用系統服務，打印 t1（即 cur->data）
+        
+            // 更新 cur，指向下一個節點
+            "lw t2, 4(t0)\n"          // t2 = cur->next (加載 cur 的下一個節點指針)
+            "mv t0, t2\n"             // 更新 cur，指向下一個節點
+        
+            "j 1b\n"                  // 跳回循環開始
+        
+            // 循環結束
+            "2:\n"
+        );
     }
     printf("\n");
     return 0;
