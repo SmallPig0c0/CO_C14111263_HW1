@@ -104,7 +104,7 @@ int arraySearch(int *p_a, int arr_size, int target) {
         "li t0, 0\n"              // t0 = 0, 初始化索引為 0
         "1:\n"                    // 標籤 1，開始循環
         "bge t0, %2, 2f\n"        // 如果 t0 >= arr_size, 跳出循環 (跳到 2)
-        "lw t1, 0(%0)\n"          // 加載 p_a[t0] (陣列元素) 到 t1
+        "lw t1, 0(%0)\n"          // 加載 p_a[t0] (陣列元素) 到 t1 
         "beq t1, %3, 3f\n"        // 如果 t1 == target, 跳轉到 3 (找到了)
         "addi t0, t0, 1\n"        // t0 = t0 + 1, 增加索引
         "j 1b\n"                  // 跳回標籤 1，繼續搜尋
@@ -121,6 +121,11 @@ int arraySearch(int *p_a, int arr_size, int target) {
     
     return result;
 }
+```
+**Debug**：需添加偏移計算(`int`佔四個字節)
+```asm
+" slli t2, t0, 2\n"        // t2 = t0 * 4 (因為 int 是 4 bytes)
+" add t3, %4, t2\n"        // t3 = p_a + t2 (計算正確的記憶體位置)
 ```
 
 # 開發日記：Linked-List Merge Sort Search
