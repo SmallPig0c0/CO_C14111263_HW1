@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
             : "=r"(cur)               // 更新 cur
             : "0"(cur)                // 輸入 cur
             : "t0"                    // 使用的暫存器
-);
+        );
         cur = cur->next;
     }
     printf("\n");
