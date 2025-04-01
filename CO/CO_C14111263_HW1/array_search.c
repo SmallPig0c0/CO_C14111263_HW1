@@ -15,14 +15,14 @@ int arraySearch(int *p_a, int arr_size, int target)
         "addi t0, t0, 1\n"        // t0 = t0 + 1, 增加索引
         "j 1b\n"                  // 跳回標籤 1，繼續搜尋
         "3:\n"
-        "mv t4, t0\n"             // t4 = t0 (存入找到的索引)
+        "mv %0, t0\n"             // 如果找到了目標，將索引存入 result
         "j 4f\n"
         "2:\n"
-        "mv t4, %1\n"             // t4 = -1 (若未找到)
+        "mv %0, %1\n"             // 如果沒有找到目標，將 result 設為 -1
         "4:\n"
-        : "=r"(result)            // 輸出變數 result，對應 t4
+        : "=r"(result)            // 輸出變數 result，對應 t0（找到的索引）
         : "r"(-1), "r"(arr_size), "r"(target), "r"(p_a)
-        : "t0", "t1", "t2", "t3", "t4", "memory"
+        : "t0", "t1", "t2", "t3", "memory"  // 使用的暫存器
     );
     return result;
 }
