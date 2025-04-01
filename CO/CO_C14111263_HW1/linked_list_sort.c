@@ -6,93 +6,109 @@ typedef struct Node {
     struct Node *next;
 } Node;
 
-// Split the linked list into two parts
+// Block A - Split the linked list into two parts
 void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     asm volatile(
-       "mv t0, %2\n"                // t0 = head (鏈表的頭節點)
-       "mv t1, t0\n"                // t1 = slow (指向頭部)
-       "mv t2, t0\n"                // t2 = fast (指向頭部)
-       "mv t3, zero\n"              // t3 = prev (初始化為 NULL)
+        // Initialize pointers
+        "mv t0, %2\n"            // t0 = head (指向鏈表頭)
+        "mv t1, t0\n"            // t1 = slow (慢指針)
+        "mv t2, t0\n"            // t2 = fast (快指針)
+        "mv t3, zero\n"          // t3 = prev (初始化為 NULL)
 
-       "1:\n"                       // 循環開始
-       "lw t4, 4(t2)\n"             // t4 = fast->next
-       "beqz t4, 2f\n"              // 如果 fast->next == NULL，跳出循環
-       "lw t5, 4(t4)\n"             // t5 = fast->next->next
-       "beqz t5, 2f\n"              // 如果 fast->next->next == NULL，跳出循環
+        // Loop to split the list using fast and slow pointers
+        "1:\n"
+        "lw t4, 4(t2)\n"         // t4 = fast->next
+        "beqz t4, 2f\n"          // If fast->next == NULL, jump to the end
+        "lw t5, 4(t4)\n"         // t5 = fast->next->next
+        "beqz t5, 2f\n"          // If fast->next->next == NULL, jump to the end
 
-       // 更新 slow 和 fast 指針
-       "lw t1, 4(t1)\n"             // slow = slow->next
-       "lw t2, 4(t5)\n"             // fast = fast->next->next
-       "mv t3, t1\n"                // prev = slow
+        // Update slow and fast pointers
+        "lw t1, 4(t1)\n"         // slow = slow->next
+        "lw t2, 4(t5)\n"         // fast = fast->next->next
+        "mv t3, t1\n"            // prev = slow
 
-       "j 1b\n"                     // 跳回循環
+        "j 1b\n"                 // Jump back to continue the loop
 
-       "2:\n"                       // 循環結束，進行鏈表分割
-       "sw zero, 4(t3)\n"           // prev->next = NULL (將 slow 前一個節點的 next 設為 NULL)
+        // End of the loop, split the list
+        "2:\n"
+        "sw zero, 4(t3)\n"       // prev->next = NULL (disconnect the second half)
 
-       // 設置 firstHalf 和 secondHalf
-       "mv %0, t0\n"                // firstHalf = head
-       "mv %1, t1\n"                // secondHalf = slow
+        // Set the firstHalf and secondHalf pointers
+        "mv %0, t0\n"            // firstHalf = head
+        "mv %1, t1\n"            // secondHalf = slow
 
-       : "=r"(*firstHalf), "=r"(*secondHalf)  // 輸出變數
-       : "r"(head)  // 輸入變數
-       : "t0", "t1", "t2", "t3", "t4", "t5"  // 影響的暫存器
-   );
+        : "=r"(*firstHalf), "=r"(*secondHalf)  // Output variables
+        : "r"(head)                         // Input variable
+        : "t0", "t1", "t2", "t3", "t4", "t5"  // Clobbered registers
+    );
 }
 
-// Merge two sorted linked lists
+// Block B - Merge two sorted linked lists
 Node *mergeSortedLists(Node *a, Node *b) {
     Node *result = NULL;
     Node *tail = NULL;
 
     asm volatile (
-        "mv t0, %1\n"                // t0 = a (指向鏈表 a)
-        "mv t1, %2\n"                // t1 = b (指向鏈表 b)
-        "mv t2, zero\n"              // t2 = result (初始化結果為 NULL)
-        "mv t3, zero\n"              // t3 = tail (初始化為 NULL)
+        // Initialize pointers
+        "mv t0, %1\n"            // t0 = a (first list)
+        "mv t1, %2\n"            // t1 = b (second list)
+        "mv t2, zero\n"          // t2 = result (initialize as NULL)
+        "mv t3, zero\n"          // t3 = tail (initialize as NULL)
 
+        // Loop to merge lists
         "1:\n"
-        "beqz t0, 3f\n"              // 如果 a == NULL，跳到處理剩餘部分
-        "beqz t1, 3f\n"              // 如果 b == NULL，跳到處理剩餘部分
+        "beqz t0, 3f\n"          // If a == NULL, jump to handle b
+        "beqz t1, 3f\n"          // If b == NULL, jump to handle a
 
-        "lw t4, 0(t0)\n"             // t4 = a->data
-        "lw t5, 0(t1)\n"             // t5 = b->data
-        "blt t4, t5, 2f\n"           // 如果 a->data < b->data，跳到處理 a 的情況
+        "lw t4, 0(t0)\n"         // t4 = a->data
+        "lw t5, 0(t1)\n"         // t5 = b->data
+        "blt t4, t5, 2f\n"       // If a->data < b->data, jump to handle a
 
-        // b 比 a 小，插入 b 到結果中
+        // b is smaller, insert b into result
         "2:\n"
-        "lw t6, 4(t1)\n"             // t6 = b->next
-        "sw t1, 0(t3)\n"             // tail->next = b
-        "mv t3, t1\n"                // tail = b
-        "mv t1, t6\n"                // b = b->next
-        "j 1b\n"                     // 跳回循環
+        "lw t6, 4(t1)\n"         // t6 = b->next
+        "sw t1, 0(t3)\n"         // tail->next = b
+        "mv t3, t1\n"            // tail = b
+        "mv t1, t6\n"            // b = b->next
+        "j 1b\n"                 // Jump back to continue the loop
 
-        // a 比 b 小，插入 a 到結果中
+        // a is smaller, insert a into result
         "3:\n"
-        "lw t6, 4(t0)\n"             // t6 = a->next
-        "sw t0, 0(t3)\n"             // tail->next = a
-        "mv t3, t0\n"                // tail = a
-        "mv t0, t6\n"                // a = a->next
+        "lw t6, 4(t0)\n"         // t6 = a->next
+        "sw t0, 0(t3)\n"         // tail->next = a
+        "mv t3, t0\n"            // tail = a
+        "mv t0, t6\n"            // a = a->next
 
-        // 當循環結束後，剩餘的鏈表可能還有元素
+        // After loop ends, handle remaining elements in a or b
         "4:\n"
-        "beqz t0, 5f\n"              // 如果 a == NULL，跳到處理 b
-        "sw t0, 0(t3)\n"             // tail->next = a
+        "beqz t0, 5f\n"          // If a == NULL, handle b
+        "sw t0, 0(t3)\n"         // tail->next = a
         "j 6f\n"
 
         "5:\n"
-        "beqz t1, 6f\n"              // 如果 b == NULL，跳到結束
-        "sw t1, 0(t3)\n"             // tail->next = b
+        "beqz t1, 6f\n"          // If b == NULL, jump to the end
+        "sw t1, 0(t3)\n"         // tail->next = b
 
         "6:\n"
-        "mv %0, t2\n"                // 返回結果鏈表頭部
+        "mv %0, t2\n"            // Return the merged result list head
 
-        : "=r"(result)               // 輸出變數 (用 result 取代 a0)
-        : "r"(a), "r"(b)             // 輸入變數
-        : "t0", "t1", "t2", "t3", "t4", "t5", "t6"  // 受影響的暫存器
+        : "=r"(result)           // Output variable
+        : "r"(a), "r"(b)         // Input variables
+        : "t0", "t1", "t2", "t3", "t4", "t5", "t6"  // Clobbered registers
     );
 
     return result;
+}
+
+// Block C - Move to the next node in the linked list
+void moveToNextNode(Node **cur) {
+    asm volatile(
+        "lw t0, 4(%0)\n"         // t0 = cur->next (load the next node)
+        "mv %0, t0\n"            // Update cur to point to the next node
+        : "=r"(*cur)             // Output variable
+        : "0"(*cur)              // Input variable
+        : "t0"                   // Clobbered register
+    );
 }
 
 // Merge Sort function for linked list
@@ -101,8 +117,7 @@ Node *mergeSort(Node *head) {
         return head; // Return directly if there is only one node
 
     Node *firstHalf, *secondHalf;
-    splitList(head, &firstHalf,
-              &secondHalf); // Split the list into two sublists
+    splitList(head, &firstHalf, &secondHalf);  // Split the list into two sublists
 
     firstHalf = mergeSort(firstHalf);   // Recursively sort the left half
     secondHalf = mergeSort(secondHalf); // Recursively sort the right half
@@ -121,6 +136,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error opening file: %s\n", argv[1]);
         return 1;
     }
+
     int list_size;
     fscanf(input, "%d", &list_size);
     Node *head = (list_size > 0) ? (Node *)malloc(sizeof(Node)) : NULL;
@@ -139,14 +155,9 @@ int main(int argc, char *argv[]) {
     cur = head;
     while (cur) {
         printf("%d ", cur->data);
-        asm volatile(
-        "lw t0, 4(%0)\n"             // t0 = cur->next (加載 cur 的下一個節點)
-        "mv %0, t0\n"                // 更新 cur，指向下一個節點
-        : "=r"(cur)                  // 更新 cur
-        : "0"(cur)                   // 輸入 cur
-        : "t0"                       // 使用的暫存器
-    );
+        moveToNextNode(&cur);  // Move to the next node
     }
     printf("\n");
+
     return 0;
 }
