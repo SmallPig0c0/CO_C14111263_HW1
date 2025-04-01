@@ -7,16 +7,13 @@ typedef struct Node {
 } Node;
 
 // Split the linked list into two parts
-void splitList(Node *head, Node **firstHalf, Node **secondHalf)
-{
+void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     asm volatile(
-       // 初始化 slow, fast 和 prev 指針
        "mv t0, %2\n"                // t0 = head (鏈表的頭節點)
        "mv t1, t0\n"                // t1 = slow (指向頭部)
        "mv t2, t0\n"                // t2 = fast (指向頭部)
        "mv t3, zero\n"              // t3 = prev (初始化為 NULL)
 
-       // 進入循環遍歷鏈表
        "1:\n"                       // 循環開始
        "lw t4, 4(t2)\n"             // t4 = fast->next
        "beqz t4, 2f\n"              // 如果 fast->next == NULL，跳出循環
@@ -44,24 +41,20 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf)
 }
 
 // Merge two sorted linked lists
-Node *mergeSortedLists(Node *a, Node *b)
-{
+Node *mergeSortedLists(Node *a, Node *b) {
     Node *result = NULL;
     Node *tail = NULL;
 
     asm volatile (
-        // 初始化指針
         "mv t0, %1\n"                // t0 = a (指向鏈表 a)
         "mv t1, %2\n"                // t1 = b (指向鏈表 b)
         "mv t2, zero\n"              // t2 = result (初始化結果為 NULL)
         "mv t3, zero\n"              // t3 = tail (初始化為 NULL)
 
-        // 進入循環比較兩個鏈表的元素
         "1:\n"
         "beqz t0, 3f\n"              // 如果 a == NULL，跳到處理剩餘部分
         "beqz t1, 3f\n"              // 如果 b == NULL，跳到處理剩餘部分
 
-        // 比較 a 和 b 的值，將較小的節點插入到結果鏈表
         "lw t4, 0(t0)\n"             // t4 = a->data
         "lw t5, 0(t1)\n"             // t5 = b->data
         "blt t4, t5, 2f\n"           // 如果 a->data < b->data，跳到處理 a 的情況
@@ -103,8 +96,7 @@ Node *mergeSortedLists(Node *a, Node *b)
 }
 
 // Merge Sort function for linked list
-Node *mergeSort(Node *head)
-{
+Node *mergeSort(Node *head) {
     if (!head || !head->next)
         return head; // Return directly if there is only one node
 
@@ -118,8 +110,7 @@ Node *mergeSort(Node *head)
     return mergeSortedLists(firstHalf, secondHalf); // Merge the sorted sublists
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     if (argc < 2) {
         printf("Usage: %s <input_file>\n", argv[0]);
         return 1;
@@ -149,8 +140,6 @@ int main(int argc, char *argv[])
     while (cur) {
         printf("%d ", cur->data);
         asm volatile(
-        // 這裡 cur 已經存儲在 %0（cur）
-        // 更新 cur，指向下一個節點
         "lw t0, 4(%0)\n"             // t0 = cur->next (加載 cur 的下一個節點)
         "mv %0, t0\n"                // 更新 cur，指向下一個節點
         : "=r"(cur)                  // 更新 cur
