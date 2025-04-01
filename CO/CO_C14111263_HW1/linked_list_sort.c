@@ -91,11 +91,11 @@ Node *mergeSortedLists(Node *a, Node *b)
         "sw t1, 0(t3)\n"             // tail->next = b
 
         "6:\n"
-        "mv %0, t2\n"                // 返回結果鏈表頭部
-
-        : "=r"(result)               // 輸出結果鏈表
+        "mv a0, t2\n"                // 返回結果鏈表頭部 (改成 a0)
+    
+        : "=r"(a0)                   // 輸出結果 (改成 a0)
         : "r"(a), "r"(b)             // 輸入鏈表 a 和 b
-        : "t0", "t1", "t2", "t3", "t4", "t5", "t6"  // 使用的暫存器
+        : "t0", "t1", "t2", "t3", "t4", "t5", "t6"  // clobber list (不包括 a0)
     );
 
     return result;
