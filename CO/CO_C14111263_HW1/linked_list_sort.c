@@ -15,14 +15,14 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
         "mv t3, zero\n"           // t3 = prev (初始化為 NULL)
 
         "1:\n"                    // 循環開始
-        "lw t4, 4(t2)\n"          // t4 = fast->next
+        "lw t4, 4(t2)\n"          // t4 = fast->next (讀取快指針的 next)
         "beqz t4, 2f\n"           // 如果 fast->next == NULL，跳到循環結束處
-        "lw t5, 4(t4)\n"          // t5 = fast->next->next
+        "lw t5, 4(t4)\n"          // t5 = fast->next->next (讀取 fast->next 的 next)
         "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，跳到循環結束處
 
         // 更新 slow 和 fast 指針
-        "lw t1, 4(t1)\n"          // slow = slow->next
-        "lw t2, 4(t5)\n"          // fast = fast->next->next
+        "lw t1, 4(t1)\n"          // slow = slow->next (慢指針向前移動)
+        "lw t2, 4(t5)\n"          // fast = fast->next->next (快指針向前移動)
         "mv t3, t1\n"             // prev = slow
 
         "j 1b\n"                  // 跳回循環
@@ -63,7 +63,7 @@ Node* mergeSortedLists(Node *a, Node *b) {
         // b 比 a 小，插入 b 到結果中
         "2:\n"
         "lw t6, 4(t1)\n"          // t6 = b->next
-        "sw t1, 0(t3)\n"          // tail->next = b
+        "sw t1, 4(t3)\n"          // tail->next = b (更新尾部指針)
         "mv t3, t1\n"             // tail = b
         "mv t1, t6\n"             // b = b->next
         "j 1b\n"                  // 跳回循環
@@ -71,19 +71,19 @@ Node* mergeSortedLists(Node *a, Node *b) {
         // a 比 b 小，插入 a 到結果中
         "3:\n"
         "lw t6, 4(t0)\n"          // t6 = a->next
-        "sw t0, 0(t3)\n"          // tail->next = a
+        "sw t0, 4(t3)\n"          // tail->next = a (更新尾部指針)
         "mv t3, t0\n"             // tail = a
         "mv t0, t6\n"             // a = a->next
 
         // 當循環結束後，剩餘的鏈表可能還有元素
         "4:\n"
         "beqz t0, 5f\n"           // 如果 a == NULL，跳到處理 b
-        "sw t0, 0(t3)\n"          // tail->next = a
+        "sw t0, 4(t3)\n"          // tail->next = a
         "j 6f\n"
 
         "5:\n"
         "beqz t1, 6f\n"           // 如果 b == NULL，跳到結束
-        "sw t1, 0(t3)\n"          // tail->next = b
+        "sw t1, 4(t3)\n"          // tail->next = b
 
         "6:\n"
         "mv %0, t2\n"             // 返回結果鏈表頭部
