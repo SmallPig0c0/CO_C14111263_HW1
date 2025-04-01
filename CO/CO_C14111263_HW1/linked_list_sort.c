@@ -10,36 +10,37 @@ typedef struct Node {
 void splitList(Node *head, Node **firstHalf, Node **secondHalf)
 {
     asm volatile(
-        // 初始化 slow, fast 和 prev 指針
-        "mv t0, %0\n"                // t0 = head (鏈表的頭節點)
-        "mv t1, t0\n"                // t1 = slow (指向頭部)
-        "mv t2, t0\n"                // t2 = fast (指向頭部)
-        "mv t3, zero\n"              // t3 = prev (初始化為 NULL)
+       // 初始化 slow, fast 和 prev 指針
+       "mv t0, %2\n"                // t0 = head (鏈表的頭節點)
+       "mv t1, t0\n"                // t1 = slow (指向頭部)
+       "mv t2, t0\n"                // t2 = fast (指向頭部)
+       "mv t3, zero\n"              // t3 = prev (初始化為 NULL)
 
-        // 進入循環遍歷鏈表
-        "1:\n"                       // 循環開始
-        "lw t4, 0(t2)\n"             // t4 = fast->next
-        "lw t5, 0(t4)\n"             // t5 = fast->next->next
-        "beqz t5, 2f\n"              // 如果 fast->next->next == NULL，跳出循環 (鏈表結束)
+       // 進入循環遍歷鏈表
+       "1:\n"                       // 循環開始
+       "lw t4, 4(t2)\n"             // t4 = fast->next
+       "beqz t4, 2f\n"              // 如果 fast->next == NULL，跳出循環
+       "lw t5, 4(t4)\n"             // t5 = fast->next->next
+       "beqz t5, 2f\n"              // 如果 fast->next->next == NULL，跳出循環
 
-        // 更新 slow 和 fast 指針
-        "addi t1, t1, 4\n"           // slow = slow->next (t1 指向下個節點)
-        "addi t2, t2, 8\n"           // fast = fast->next->next (t2 指向下一個節點的下一個)
-        "mv t3, t1\n"                // prev = slow (prev 指向 slow 節點)
+       // 更新 slow 和 fast 指針
+       "lw t1, 4(t1)\n"             // slow = slow->next
+       "lw t2, 4(t5)\n"             // fast = fast->next->next
+       "mv t3, t1\n"                // prev = slow
 
-        "j 1b\n"                     // 跳回循環
+       "j 1b\n"                     // 跳回循環
 
-        "2:\n"                       // 循環結束，進行鏈表分割
-        "sw zero, 0(t3)\n"           // prev->next = NULL (將 slow 前一個節點的 next 設為 NULL)
+       "2:\n"                       // 循環結束，進行鏈表分割
+       "sw zero, 4(t3)\n"           // prev->next = NULL (將 slow 前一個節點的 next 設為 NULL)
 
-        // 設置 firstHalf 和 secondHalf
-        "mv %1, t0\n"                // firstHalf = head
-        "mv %2, t1\n"                // secondHalf = slow
+       // 設置 firstHalf 和 secondHalf
+       "mv %0, t0\n"                // firstHalf = head
+       "mv %1, t1\n"                // secondHalf = slow
 
-        : "=r"(head), "=r"(*firstHalf), "=r"(*secondHalf)  // 輸出：將 firstHalf 和 secondHalf 寫入指定位置
-        : "r"(head)  // 輸入：head 是鏈表的頭節點
-        : "t0", "t1", "t2", "t3", "t4", "t5"  // 影響的暫存器
-    );
+       : "=r"(*firstHalf), "=r"(*secondHalf)  // 輸出變數
+       : "r"(head)  // 輸入變數
+       : "t0", "t1", "t2", "t3", "t4", "t5"  // 影響的暫存器
+   );
 }
 
 // Merge two sorted linked lists
@@ -50,8 +51,8 @@ Node *mergeSortedLists(Node *a, Node *b)
 
     asm volatile (
         // 初始化指針
-        "mv t0, %0\n"                // t0 = a (指向鏈表 a)
-        "mv t1, %1\n"                // t1 = b (指向鏈表 b)
+        "mv t0, %1\n"                // t0 = a (指向鏈表 a)
+        "mv t1, %2\n"                // t1 = b (指向鏈表 b)
         "mv t2, zero\n"              // t2 = result (初始化結果為 NULL)
         "mv t3, zero\n"              // t3 = tail (初始化為 NULL)
 
@@ -91,11 +92,11 @@ Node *mergeSortedLists(Node *a, Node *b)
         "sw t1, 0(t3)\n"             // tail->next = b
 
         "6:\n"
-        "mv a0, t2\n"                // 返回結果鏈表頭部 (改成 a0)
-    
-        : "=r"(a0)                   // 輸出結果 (改成 a0)
-        : "r"(a), "r"(b)             // 輸入鏈表 a 和 b
-        : "t0", "t1", "t2", "t3", "t4", "t5", "t6"  // clobber list (不包括 a0)
+        "mv %0, t2\n"                // 返回結果鏈表頭部
+
+        : "=r"(result)               // 輸出變數 (用 result 取代 a0)
+        : "r"(a), "r"(b)             // 輸入變數
+        : "t0", "t1", "t2", "t3", "t4", "t5", "t6"  // 受影響的暫存器
     );
 
     return result;
@@ -148,27 +149,14 @@ int main(int argc, char *argv[])
     while (cur) {
         printf("%d ", cur->data);
         asm volatile(
-            // 初始化 cur
-            "mv t0, %0\n"             // t0 = cur (指向鏈表頭節點)
-        
-            // 循環開始
-            "1:\n"
-            "beqz t0, 2f\n"           // 如果 cur 為 NULL，跳到循環結束
-        
-            // 打印 cur->data
-            "lw t1, 0(t0)\n"          // t1 = cur->data (加載 cur 的數據)
-            "li a0, 1\n"              // 設置 printf 的輸出格式為整數
-            "ecall\n"                 // 調用系統服務，打印 t1（即 cur->data）
-        
-            // 更新 cur，指向下一個節點
-            "lw t2, 4(t0)\n"          // t2 = cur->next (加載 cur 的下一個節點指針)
-            "mv t0, t2\n"             // 更新 cur，指向下一個節點
-        
-            "j 1b\n"                  // 跳回循環開始
-        
-            // 循環結束
-            "2:\n"
-        );
+        // 這裡 cur 已經存儲在 %0（cur）
+        // 更新 cur，指向下一個節點
+        "lw t0, 4(%0)\n"             // t0 = cur->next (加載 cur 的下一個節點)
+        "mv %0, t0\n"                // 更新 cur，指向下一個節點
+        : "=r"(cur)                  // 更新 cur
+        : "0"(cur)                   // 輸入 cur
+        : "t0"                       // 使用的暫存器
+    );
     }
     printf("\n");
     return 0;
