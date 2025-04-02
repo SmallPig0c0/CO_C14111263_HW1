@@ -48,19 +48,17 @@ Node *mergeSortedLists(Node *a, Node *b) {
     Node *tail = NULL;
 
     asm volatile(
-        // Initialize result and tail to NULL
         "mv t0, %1\n"            // t0 = a (指向第一個鏈表)
         "mv t1, %2\n"            // t1 = b (指向第二個鏈表)
         "mv t2, zero\n"          // t2 = result (初始化結果鏈表為 NULL)
         "mv t3, zero\n"          // t3 = tail (初始化尾部為 NULL)
 
-        // Loop to merge lists
         "1:\n"
         "beqz t0, 4f\n"           // 如果 a == NULL，跳到處理 b
         "beqz t1, 4f\n"           // 如果 b == NULL，跳到處理 a
 
-        "lw t4, 0(t0)\n"          // t4 = a->data
-        "lw t5, 0(t1)\n"          // t5 = b->data
+        "ld t4, 0(t0)\n"          // t4 = a->data
+        "ld t5, 0(t1)\n"          // t5 = b->data
         "blt t4, t5, 2f\n"        // 如果 a->data < b->data，跳到處理 a
 
         // Handle case where b < a, insert b into result
