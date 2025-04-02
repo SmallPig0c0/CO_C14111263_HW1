@@ -9,12 +9,12 @@ typedef struct Node {
 // 使用 RISC-V 組合語言拆分鏈結串列
 void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     asm volatile(
-        "mv t0, %2\n"             // t0 = head
-        "beqz t0, 3f\n"           // 若 head 為 NULL，直接返回
+        "mv t0, %2\n"             // t0 = head (鏈表頭)
+        "beqz t0, 3f\n"           // 如果 head 為 NULL，跳出
 
         "mv t1, t0\n"             // t1 = slow (慢指針)
         "mv t2, t0\n"             // t2 = fast (快指針)
-        "mv t3, zero\n"           // t3 = prev (NULL)
+        "mv t3, zero\n"           // t3 = prev (慢指針的前一個節點)
 
         "1:\n"
         "lw t4, 4(t2)\n"          // t4 = fast->next
@@ -30,7 +30,7 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
 
         "2:\n"
         "beqz t3, 3f\n"           // 如果 prev == NULL，則不需要斷開
-        "sw zero, 4(t3)\n"        // prev->next = NULL，斷開鏈結
+        "sw zero, 4(t3)\n"        // prev->next = NULL，斷開前半部
 
         "3:\n"
         "mv %0, t0\n"             // firstHalf = head
@@ -41,6 +41,7 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
         : "t0", "t1", "t2", "t3", "t4", "t5"
     );
 }
+
 
 // 輸出鏈結串列
 void printList(Node *head) {
@@ -83,12 +84,9 @@ int main(int argc, char *argv[]) {
     Node *firstHalf = NULL, *secondHalf = NULL;
     splitList(head, &firstHalf, &secondHalf);
 
-    // 印出分割結果
     printf("First half: ");
     printList(firstHalf);
-    
     printf("Second half: ");
     printList(secondHalf);
 
-    return 0;
 }
