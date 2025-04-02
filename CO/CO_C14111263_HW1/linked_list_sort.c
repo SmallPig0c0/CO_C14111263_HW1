@@ -10,33 +10,33 @@ typedef struct Node {
 void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     asm volatile(
         "mv t0, %2\n"             // t0 = head (鏈表的頭節點)
-        "mv t1, t0\n"             // t1 = slow (慢指針，指向頭部)
-        "mv t2, t0\n"             // t2 = fast (快指針，指向頭部)
-        "mv t3, zero\n"           // t3 = prev (初始化為 NULL)
+        "mv t1, t0\n"             // t1 = slow (慢指針)
+        "mv t2, t0\n"             // t2 = fast (快指針)
+        "mv t3, zero\n"           // t3 = prev (NULL)
 
-        "1:\n"                    // 循環開始
-        "lw t4, 4(t2)\n"          // t4 = fast->next (讀取快指針的 next)
-        "beqz t4, 2f\n"           // 如果 fast->next == NULL，跳到循環結束處
-        "lw t5, 4(t4)\n"          // t5 = fast->next->next (讀取 fast->next 的 next)
-        "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，跳到循環結束處
+        "1:\n"
+        "lw t4, 4(t2)\n"          // t4 = fast->next
+        "beqz t4, 2f\n"           // 如果 fast->next == NULL，跳到結束
+        "lw t5, 4(t4)\n"          // t5 = fast->next->next
+        "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，跳到結束
 
-        // 更新 slow 和 fast 指針
-        "lw t1, 4(t1)\n"          // slow = slow->next (慢指針向前移動)
-        "lw t2, 4(t5)\n"          // fast = fast->next->next (快指針向前移動)
         "mv t3, t1\n"             // prev = slow
+        "lw t1, 4(t1)\n"          // slow = slow->next
+        "mv t2, t5\n"             // fast = fast->next->next
 
-        "j 1b\n"                  // 跳回循環
+        "j 1b\n"                  // 繼續迴圈
 
-        "2:\n"                    // 循環結束，進行鏈表分割
-        "sw zero, 4(t3)\n"        // prev->next = NULL (將 slow 前一個節點的 next 設為 NULL)
+        "2:\n"
+        "beqz t3, 3f\n"           // 如果 prev == NULL，則不需要斷開 (鏈結不足以拆分)
+        "sw zero, 4(t3)\n"        // prev->next = NULL，分割兩半
 
-        // 設置 firstHalf 和 secondHalf
+        "3:\n"
         "mv %0, t0\n"             // firstHalf = head
         "mv %1, t1\n"             // secondHalf = slow
 
-        : "=r"(*firstHalf), "=r"(*secondHalf)  // 輸出變數
-        : "r"(head)                         // 輸入變數
-        : "t0", "t1", "t2", "t3", "t4", "t5"  // 影響的暫存器
+        : "=r"(*firstHalf), "=r"(*secondHalf)
+        : "r"(head)
+        : "t0", "t1", "t2", "t3", "t4", "t5"
     );
 }
 
