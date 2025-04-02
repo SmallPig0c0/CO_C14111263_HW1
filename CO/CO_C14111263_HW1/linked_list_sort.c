@@ -40,21 +40,22 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
         : "r"(head)
         : "t0", "t1", "t2", "t3", "t4", "t5", "memory"
     );
-} //correct
+}
 
 // Merge two sorted linked lists
 Node *mergeSortedLists(Node *a, Node *b) {
     Node *result = NULL;
     Node *tail = NULL;
-    
+
     asm volatile(
-        // 初始化
+        // Initialize result and tail to NULL
         "mv t0, %1\n"            // t0 = a (指向第一個鏈表)
         "mv t1, %2\n"            // t1 = b (指向第二個鏈表)
         "mv t2, zero\n"          // t2 = result (初始化結果鏈表為 NULL)
         "mv t3, zero\n"          // t3 = tail (初始化尾部為 NULL)
 
-        "1:\n"                    // 循環開始
+        // Loop to merge lists
+        "1:\n"
         "beqz t0, 4f\n"           // 如果 a == NULL，跳到處理 b
         "beqz t1, 4f\n"           // 如果 b == NULL，跳到處理 a
 
@@ -62,13 +63,13 @@ Node *mergeSortedLists(Node *a, Node *b) {
         "lw t5, 0(t1)\n"          // t5 = b->data
         "blt t4, t5, 2f\n"        // 如果 a->data < b->data，跳到處理 a
 
-        // b 比 a 小，插入 b 到結果中
+        // Handle case where b < a, insert b into result
         "ld t6, 8(t1)\n"          // t6 = b->next
         "beqz t2, 3f\n"           // 如果 result == NULL, 設置 result = b
         "sd t1, 8(t3)\n"          // tail->next = b (更新尾部指針)
         "j 3f\n"
 
-        "2:\n"                    // a 比 b 小，插入 a 到結果中
+        "2:\n"                    // Handle case where a < b, insert a into result
         "ld t6, 8(t0)\n"          // t6 = a->next
         "beqz t2, 3f\n"           // 如果 result == NULL, 設置 result = a
         "sd t0, 8(t3)\n"          // tail->next = a (更新尾部指針)
@@ -78,7 +79,7 @@ Node *mergeSortedLists(Node *a, Node *b) {
         "mv t0, t6\n"             // a = a->next 或 b = b->next
         "j 1b\n"                  // 跳回循環
 
-        // 當其中一條鏈結串列處理完時，直接接上另一條
+        // When one list is empty, append the other list
         "4:\n"
         "beqz t0, 5f\n"           // 如果 a == NULL，跳到處理 b
         "sd t0, 8(t3)\n"          // tail->next = a
@@ -107,19 +108,13 @@ Node *mergeSort(Node *head) {
 
     Node *firstHalf, *secondHalf;
     
-    // Split the list into two sublists
     splitList(head, &firstHalf, &secondHalf);
 
-    // Recursively sort the left half
     firstHalf = mergeSort(firstHalf);
-
-    // Recursively sort the right half
     secondHalf = mergeSort(secondHalf);
 
-    // Merge the sorted sublists
     return mergeSortedLists(firstHalf, secondHalf);
 }
-
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -144,7 +139,6 @@ int main(int argc, char *argv[]) {
         if (i + 1 < list_size) 
             cur->next = (Node*)malloc(sizeof(Node));
         cur = cur->next;
-        
     }
     fclose(input);
 
@@ -163,5 +157,6 @@ int main(int argc, char *argv[]) {
         );
     }
     printf("\n");
+
     return 0;
 }
