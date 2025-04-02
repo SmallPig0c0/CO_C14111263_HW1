@@ -9,29 +9,30 @@ typedef struct Node {
 // 使用 RISC-V 組合語言拆分鏈結串列
 void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     asm volatile(
-        "mv t0, %2\n"             // t0 = head (鏈表頭)
-        "beqz t0, 3f\n"           // 如果 head 為 NULL，跳出
+        "mv t0, %2\n"             // t0 = head
+        "beqz t0, 3f\n"           // if head is NULL, return immediately
 
-        "mv t1, t0\n"             // t1 = slow (慢指針)
-        "mv t2, t0\n"             // t2 = fast (快指針)
-        "mv t3, zero\n"           // t3 = prev (慢指針的前一個節點)
+        "mv t1, t0\n"             // t1 = slow (slow pointer)
+        "mv t2, t0\n"             // t2 = fast (fast pointer)
+        "mv t3, zero\n"           // t3 = prev (NULL)
 
         "1:\n"
         "lw t4, 4(t2)\n"          // t4 = fast->next
-        "beqz t4, 2f\n"           // 如果 fast->next == NULL，跳到結束
+        "beqz t4, 2f\n"           // if fast->next == NULL, jump to end
         "lw t5, 4(t4)\n"          // t5 = fast->next->next
-        "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，跳到結束
+        "beqz t5, 2f\n"           // if fast->next->next == NULL, jump to end
 
         "mv t3, t1\n"             // prev = slow
         "lw t1, 4(t1)\n"          // slow = slow->next
         "mv t2, t5\n"             // fast = fast->next->next
 
-        "j 1b\n"                  // 繼續迴圈
+        "j 1b\n"                  // continue loop
 
         "2:\n"
-        "beqz t3, 3f\n"           // 如果 prev == NULL，則不需要斷開
-        "sw zero, 4(t3)\n"        // prev->next = NULL，斷開前半部
+        "beqz t3, 3f\n"           // if prev == NULL, don't break the list
+        "sw zero, 4(t3)\n"        // prev->next = NULL (break the list)
 
+        // Add print statement here for checking the slow pointer
         "3:\n"
         "mv %0, t0\n"             // firstHalf = head
         "mv %1, t1\n"             // secondHalf = slow
@@ -40,8 +41,12 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
         : "r"(head)
         : "t0", "t1", "t2", "t3", "t4", "t5"
     );
-}
 
+    // Optionally print slow node data for verification
+    if (*secondHalf) {
+        printf("Slow pointer at node with value: %d\n", (*secondHalf)->data);
+    }
+}
 
 // 輸出鏈結串列
 void printList(Node *head) {
@@ -84,9 +89,12 @@ int main(int argc, char *argv[]) {
     Node *firstHalf = NULL, *secondHalf = NULL;
     splitList(head, &firstHalf, &secondHalf);
 
+    // 打印兩部分的鏈結串列
     printf("First half: ");
     printList(firstHalf);
+
     printf("Second half: ");
     printList(secondHalf);
 
+    return 0;
 }
