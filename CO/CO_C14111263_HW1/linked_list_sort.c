@@ -9,12 +9,13 @@ typedef struct Node {
 // Split the linked list into two parts
 void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     asm volatile(
+        // 初始化指針
         "mv t0, %2\n"             // t0 = head (鏈表的頭節點)
-        "beqz t0, 3f\n"           // 若 head 為 NULL，直接返回
+        "beqz t0, 3f\n"           // 如果 head 為 NULL，直接返回
 
         "mv t1, t0\n"             // t1 = slow (慢指針)
         "mv t2, t0\n"             // t2 = fast (快指針)
-        "mv t3, zero\n"           // t3 = prev (NULL)
+        "mv t3, zero\n"           // t3 = prev (前一個節點，初始化為 NULL)
 
         "1:\n"
         "lw t4, 4(t2)\n"          // t4 = fast->next
@@ -22,6 +23,7 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
         "lw t5, 4(t4)\n"          // t5 = fast->next->next
         "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，跳到結束
 
+        // 更新指針位置
         "mv t3, t1\n"             // prev = slow
         "lw t1, 4(t1)\n"          // slow = slow->next
         "mv t2, t5\n"             // fast = fast->next->next
