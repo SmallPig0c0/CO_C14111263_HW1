@@ -99,7 +99,26 @@ Node* mergeSortedLists(Node *a, Node *b) {
     return result;
 }
 
+// Merge Sort function for linked list
+Node* mergeSort(Node *head) {
+    if (!head || !head->next) {
+        return head;  // Return directly if there is only one node
+    }
 
+    Node *firstHalf, *secondHalf;
+    
+    // Split the list into two sublists
+    splitList(head, &firstHalf, &secondHalf);
+
+    // Recursively sort the left half
+    firstHalf = mergeSort(firstHalf);
+
+    // Recursively sort the right half
+    secondHalf = mergeSort(secondHalf);
+
+    // Merge the sorted sublists
+    return mergeSortedLists(firstHalf, secondHalf);
+}
 
 
 int main(int argc, char *argv[]) {
