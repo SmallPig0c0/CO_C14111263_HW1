@@ -40,10 +40,10 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
         : "r"(head)
         : "t0", "t1", "t2", "t3", "t4", "t5", "memory"
     );
-}
+} //correct
 
 // Merge two sorted linked lists
-Node* mergeSortedLists(Node *a, Node *b) {
+Node *mergeSortedLists(Node *a, Node *b) {
     Node *result = NULL;
     Node *tail = NULL;
     
@@ -100,7 +100,7 @@ Node* mergeSortedLists(Node *a, Node *b) {
 }
 
 // Merge Sort function for linked list
-Node* mergeSort(Node *head) {
+Node *mergeSort(Node *head) {
     if (!head || !head->next) {
         return head;  // Return directly if there is only one node
     }
