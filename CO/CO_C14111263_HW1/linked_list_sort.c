@@ -18,29 +18,30 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
 
         "1:\n"
         "lw t4, 4(t2)\n"          // t4 = fast->next
-        "beqz t4, 2f\n"          // if fast->next == NULL, stop
-        "lw t5, 4(t4)\n"         // t5 = fast->next->next
-        "beqz t5, 2f\n"          // if fast->next->next == NULL, stop
+        "beqz t4, 2f\n"           // if fast->next == NULL, stop
+        "lw t5, 4(t4)\n"          // t5 = fast->next->next
+        "beqz t5, 2f\n"           // if fast->next->next == NULL, stop
 
-        "mv t3, t1\n"            // prev = slow
-        "lw t1, 4(t1)\n"         // slow = slow->next
-        "mv t2, t5\n"            // fast = fast->next->next
+        "mv t3, t1\n"             // prev = slow
+        "lw t1, 4(t1)\n"          // slow = slow->next
+        "mv t2, t5\n"             // fast = fast->next->next
 
-        "j 1b\n"                 // continue loop
+        "j 1b\n"                  // continue loop
 
         "2:\n"
-        "beqz t3, 3f\n"          // if prev == NULL, don't break
-        "sw zero, 4(t3)\n"       // prev->next = NULL (split list)
+        "beqz t3, 3f\n"           // if prev == NULL, don't break
+        "sw zero, 4(t3)\n"        // prev->next = NULL (split list)
 
         "3:\n"
-        "mv %0, t0\n"            // firstHalf = head
-        "mv %1, t1\n"            // secondHalf = slow
+        "sw t0, 0(%0)\n"          // *firstHalf = head
+        "sw t1, 0(%1)\n"          // *secondHalf = slow
 
-        : "=r"(*firstHalf), "=r"(*secondHalf)
-        : "r"(head)
-        : "t0", "t1", "t2", "t3", "t4", "t5"
+        :
+        : "r"(firstHalf), "r"(secondHalf), "r"(head)
+        : "t0", "t1", "t2", "t3", "t4", "t5", "memory"
     );
 }
+
 
 // 輸出鏈結串列
 void printList(Node *head) {
