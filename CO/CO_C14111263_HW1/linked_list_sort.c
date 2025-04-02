@@ -6,36 +6,32 @@ typedef struct Node {
     struct Node *next;
 } Node;
 
-// Split the linked list into two parts
+// 使用 RISC-V 組合語言拆分鏈結串列
 void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     asm volatile(
-        // 初始化指標
-        "mv t0, %2\n"             // t0 = head (鏈表的頭節點)
+        "mv t0, %2\n"             // t0 = head
         "beqz t0, 3f\n"           // 若 head 為 NULL，直接返回
 
         "mv t1, t0\n"             // t1 = slow (慢指針)
         "mv t2, t0\n"             // t2 = fast (快指針)
-        "mv t3, zero\n"           // t3 = prev (前一個節點，初始化為 NULL)
+        "mv t3, zero\n"           // t3 = prev (NULL)
 
-        // 開始快慢指針法
         "1:\n"
         "lw t4, 4(t2)\n"          // t4 = fast->next
-        "beqz t4, 2f\n"           // 如果 fast->next == NULL，結束迴圈
+        "beqz t4, 2f\n"           // 如果 fast->next == NULL，跳到結束
         "lw t5, 4(t4)\n"          // t5 = fast->next->next
-        "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，結束迴圈
+        "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，跳到結束
 
-        "mv t3, t1\n"             // prev = slow (儲存 slow 目前的位置)
+        "mv t3, t1\n"             // prev = slow
         "lw t1, 4(t1)\n"          // slow = slow->next
-        "lw t2, 4(t4)\n"          // fast = fast->next->next
+        "mv t2, t5\n"             // fast = fast->next->next
 
         "j 1b\n"                  // 繼續迴圈
 
-        // 迴圈結束，準備分割鏈表
         "2:\n"
-        "beqz t3, 3f\n"           // 如果 prev == NULL，則不需要斷開 (鏈結不足以拆分)
-        "sw zero, 4(t3)\n"        // prev->next = NULL，切斷鏈表
+        "beqz t3, 3f\n"           // 如果 prev == NULL，則不需要斷開
+        "sw zero, 4(t3)\n"        // prev->next = NULL，斷開鏈結
 
-        // 設定返回值
         "3:\n"
         "mv %0, t0\n"             // firstHalf = head
         "mv %1, t1\n"             // secondHalf = slow
@@ -46,9 +42,7 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     );
 }
 
-
-
-// Function to print the linked list
+// 輸出鏈結串列
 void printList(Node *head) {
     Node *cur = head;
     while (cur) {
@@ -85,11 +79,11 @@ int main(int argc, char *argv[]) {
     }
     fclose(input);
 
-    // Testing splitList function
+    // 測試 splitList
     Node *firstHalf = NULL, *secondHalf = NULL;
     splitList(head, &firstHalf, &secondHalf);
 
-    // Print the two halves of the linked list
+    // 印出分割結果
     printf("First half: ");
     printList(firstHalf);
     

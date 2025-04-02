@@ -275,4 +275,5 @@ git clone <GitHub_網址>
 ```bash
 cd ~/riscv/CO_C14111263_HW1
 make judge 
+judge -c judge3.conf -v 1
 ```
