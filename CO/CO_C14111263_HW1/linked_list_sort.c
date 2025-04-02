@@ -18,34 +18,28 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
 
         "1:\n"
         "lw t4, 4(t2)\n"          // t4 = fast->next
-        "beqz t4, 2f\n"           // if fast->next == NULL, jump to end
-        "lw t5, 4(t4)\n"          // t5 = fast->next->next
-        "beqz t5, 2f\n"           // if fast->next->next == NULL, jump to end
+        "beqz t4, 2f\n"          // if fast->next == NULL, stop
+        "lw t5, 4(t4)\n"         // t5 = fast->next->next
+        "beqz t5, 2f\n"          // if fast->next->next == NULL, stop
 
-        "mv t3, t1\n"             // prev = slow
-        "lw t1, 4(t1)\n"          // slow = slow->next
-        "mv t2, t5\n"             // fast = fast->next->next
+        "mv t3, t1\n"            // prev = slow
+        "lw t1, 4(t1)\n"         // slow = slow->next
+        "mv t2, t5\n"            // fast = fast->next->next
 
-        "j 1b\n"                  // continue loop
+        "j 1b\n"                 // continue loop
 
         "2:\n"
-        "beqz t3, 3f\n"           // if prev == NULL, don't break the list
-        "sw zero, 4(t3)\n"        // prev->next = NULL (break the list)
+        "beqz t3, 3f\n"          // if prev == NULL, don't break
+        "sw zero, 4(t3)\n"       // prev->next = NULL (split list)
 
-        // Add print statement here for checking the slow pointer
         "3:\n"
-        "mv %0, t0\n"             // firstHalf = head
-        "mv %1, t1\n"             // secondHalf = slow
+        "mv %0, t0\n"            // firstHalf = head
+        "mv %1, t1\n"            // secondHalf = slow
 
         : "=r"(*firstHalf), "=r"(*secondHalf)
         : "r"(head)
         : "t0", "t1", "t2", "t3", "t4", "t5"
     );
-
-    // Optionally print slow node data for verification
-    if (*secondHalf) {
-        printf("Slow pointer at node with value: %d\n", (*secondHalf)->data);
-    }
 }
 
 // 輸出鏈結串列
@@ -89,10 +83,13 @@ int main(int argc, char *argv[]) {
     Node *firstHalf = NULL, *secondHalf = NULL;
     splitList(head, &firstHalf, &secondHalf);
 
-    // 打印兩部分的鏈結串列
+    // 印出 slow 指針當前位置以確認拆分點
+    if (secondHalf) {
+        printf("Slow pointer at node with value: %d\n", secondHalf->data);
+    }
+
     printf("First half: ");
     printList(firstHalf);
-
     printf("Second half: ");
     printList(secondHalf);
 
