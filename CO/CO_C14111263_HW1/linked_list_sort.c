@@ -7,40 +7,39 @@ typedef struct Node {
 } Node;
 
 // 使用 RISC-V 組合語言拆分鏈結串列
-void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
-    asm volatile(
-        "mv t0, %2\n"             // t0 = head
-        "beqz t0, 3f\n"           // if head is NULL, return immediately
+asm volatile(
+    "mv t0, %2\n"             // t0 = head
+    "beqz t0, 3f\n"           // if head is NULL, return immediately
 
-        "mv t1, t0\n"             // t1 = slow (slow pointer)
-        "mv t2, t0\n"             // t2 = fast (fast pointer)
-        "mv t3, zero\n"           // t3 = prev (NULL)
+    "mv t1, t0\n"             // t1 = slow (slow pointer)
+    "mv t2, t0\n"             // t2 = fast (fast pointer)
+    "mv t3, zero\n"           // t3 = prev (NULL)
 
-        "1:\n"
-        "lw t4, 4(t2)\n"          // t4 = fast->next
-        "beqz t4, 2f\n"           // if fast->next == NULL, stop
-        "lw t5, 4(t4)\n"          // t5 = fast->next->next
-        "beqz t5, 2f\n"           // if fast->next->next == NULL, stop
+    "1:\n"
+    "ld t4, 8(t2)\n"          // t4 = fast->next
+    "beqz t4, 2f\n"          // if fast->next == NULL, stop
+    "ld t5, 8(t4)\n"         // t5 = fast->next->next
+    "beqz t5, 2f\n"          // if fast->next->next == NULL, stop
 
-        "mv t3, t1\n"             // prev = slow
-        "lw t1, 4(t1)\n"          // slow = slow->next
-        "mv t2, t5\n"             // fast = fast->next->next
+    "mv t3, t1\n"            // prev = slow
+    "ld t1, 8(t1)\n"         // slow = slow->next
+    "mv t2, t5\n"            // fast = fast->next->next
 
-        "j 1b\n"                  // continue loop
+    "j 1b\n"                 // continue loop
 
-        "2:\n"
-        "beqz t3, 3f\n"           // if prev == NULL, don't break
-        "sw zero, 4(t3)\n"        // prev->next = NULL (split list)
+    "2:\n"
+    "beqz t3, 3f\n"          // if prev == NULL, don't break
+    "sd zero, 8(t3)\n"       // prev->next = NULL (split list)
 
-        "3:\n"
-        "sw t0, 0(%0)\n"          // *firstHalf = head
-        "sw t1, 0(%1)\n"          // *secondHalf = slow
+    "3:\n"
+    "mv %0, t0\n"            // firstHalf = head
+    "mv %1, t1\n"            // secondHalf = slow
 
-        :
-        : "r"(firstHalf), "r"(secondHalf), "r"(head)
-        : "t0", "t1", "t2", "t3", "t4", "t5", "memory"
-    );
-}
+    : "=r"(*firstHalf), "=r"(*secondHalf)
+    : "r"(head)
+    : "t0", "t1", "t2", "t3", "t4", "t5", "memory"
+);
+
 
 
 // 輸出鏈結串列
