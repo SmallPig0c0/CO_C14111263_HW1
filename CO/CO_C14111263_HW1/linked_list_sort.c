@@ -102,9 +102,11 @@ Node* mergeSort(Node *head) {
         return head; // Return directly if there is only one node
 
     Node *firstHalf, *secondHalf;
-    
+
+    printf("Splitting list...\n");
     splitList(head, &firstHalf, &secondHalf); // Split the list into two sublists
-    
+    printf("Split finished!\n");
+
     firstHalf = mergeSort(firstHalf); // Recursively sort the left half
     secondHalf = mergeSort(secondHalf); // Recursively sort the right half
     
@@ -140,8 +142,11 @@ int main(int argc, char *argv[]) {
     fclose(input);
 
     // Linked list sort
+    printf("Start sorting...\n");
     head = mergeSort(head);
-    
+    printf("Sorting finished!\n");
+
+
     cur = head;
     while (cur) {
         printf("%d ", cur->data);
