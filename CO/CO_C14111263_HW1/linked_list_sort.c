@@ -6,35 +6,46 @@ typedef struct Node {
     struct Node *next;
 } Node;
 
-// 使用 RISC-V 組合語言拆分鏈結串列
+// Block C (Move to the next node)
+void moveToNextNode(Node **cur) {
+    asm volatile(
+        "ld t0, 8(%0)\n"          // t0 = cur->next
+        "mv %0, t0\n"             // 更新 cur 為 cur->next
+        : "=r"(*cur)               // 更新 cur
+        : "0"(*cur)                // 輸入 cur
+        : "t0"                     // 使用的暫存器
+    );
+}
+
+// Block A (splitList) - Split the linked list into two halves
 void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     asm volatile(
-        "mv t0, %2\n"             // t0 = head
-        "beqz t0, 3f\n"           // if head is NULL, return immediately
+        "mv t0, %2\n"             // t0 = head (鏈表頭)
+        "beqz t0, 3f\n"           // 如果 head == NULL，跳過操作
 
-        "mv t1, t0\n"             // t1 = slow (slow pointer)
-        "mv t2, t0\n"             // t2 = fast (fast pointer)
+        "mv t1, t0\n"             // t1 = slow (slow 指針)
+        "mv t2, t0\n"             // t2 = fast (fast 指針)
         "mv t3, zero\n"           // t3 = prev (NULL)
 
         "1:\n"
         "ld t4, 8(t2)\n"          // t4 = fast->next
-        "beqz t4, 2f\n"           // if fast->next == NULL, stop
+        "beqz t4, 2f\n"           // 如果 fast->next == NULL，跳出
         "ld t5, 8(t4)\n"          // t5 = fast->next->next
-        "beqz t5, 2f\n"           // if fast->next->next == NULL, stop
+        "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，跳出
 
-        "mv t3, t1\n"            // prev = slow
-        "ld t1, 8(t1)\n"         // slow = slow->next
-        "mv t2, t5\n"            // fast = fast->next->next
+        "mv t3, t1\n"             // prev = slow
+        "ld t1, 8(t1)\n"          // slow = slow->next
+        "mv t2, t5\n"             // fast = fast->next->next
 
-        "j 1b\n"                 // continue loop
+        "j 1b\n"                  // 繼續循環
 
         "2:\n"
-        "beqz t3, 3f\n"          // if prev == NULL, don't break
-        "sd zero, 8(t3)\n"       // prev->next = NULL (split list)
+        "beqz t3, 3f\n"           // 如果 prev == NULL，跳過
+        "sd zero, 8(t3)\n"        // prev->next = NULL，斷開鏈表
 
         "3:\n"
-        "mv %0, t0\n"            // firstHalf = head
-        "mv %1, t1\n"            // secondHalf = slow
+        "mv %0, t0\n"             // firstHalf = head
+        "mv %1, t1\n"             // secondHalf = slow
 
         : "=r"(*firstHalf), "=r"(*secondHalf)
         : "r"(head)
@@ -42,15 +53,15 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
     );
 }
 
-// Merge two sorted linked lists
+// Block B (mergeSortedLists) - Merge two sorted linked lists into one
 Node *mergeSortedLists(Node *a, Node *b) {
     Node *result = NULL;
     Node *tail = NULL;
 
     asm volatile(
-        "mv t0, %1\n"            // t0 = a (指向第一個鏈表)
-        "mv t1, %2\n"            // t1 = b (指向第二個鏈表)
-        "mv t2, zero\n"          // t2 = result (初始化結果鏈表為 NULL)
+        "mv t0, %1\n"            // t0 = a
+        "mv t1, %2\n"            // t1 = b
+        "mv t2, zero\n"          // t2 = result (初始化結果為 NULL)
         "mv t3, zero\n"          // t3 = tail (初始化尾部為 NULL)
 
         "1:\n"
@@ -61,23 +72,23 @@ Node *mergeSortedLists(Node *a, Node *b) {
         "ld t5, 0(t1)\n"          // t5 = b->data
         "blt t4, t5, 2f\n"        // 如果 a->data < b->data，跳到處理 a
 
-        // Handle case where b < a, insert b into result
+        // 處理 b < a
         "ld t6, 8(t1)\n"          // t6 = b->next
-        "beqz t2, 3f\n"           // 如果 result == NULL, 設置 result = b
-        "sd t1, 8(t3)\n"          // tail->next = b (更新尾部指針)
+        "beqz t2, 3f\n"           // 如果 result == NULL，設置 result = b
+        "sd t1, 8(t3)\n"          // tail->next = b
         "j 3f\n"
 
-        "2:\n"                    // Handle case where a < b, insert a into result
+        "2:\n"                    // 處理 a < b
         "ld t6, 8(t0)\n"          // t6 = a->next
-        "beqz t2, 3f\n"           // 如果 result == NULL, 設置 result = a
-        "sd t0, 8(t3)\n"          // tail->next = a (更新尾部指針)
+        "beqz t2, 3f\n"           // 如果 result == NULL，設置 result = a
+        "sd t0, 8(t3)\n"          // tail->next = a
 
         "3:\n"
         "mv t3, t0\n"             // tail = a 或 b
         "mv t0, t6\n"             // a = a->next 或 b = b->next
         "j 1b\n"                  // 跳回循環
 
-        // When one list is empty, append the other list
+        // 當一個鏈表空了，接上另一個鏈表
         "4:\n"
         "beqz t0, 5f\n"           // 如果 a == NULL，跳到處理 b
         "sd t0, 8(t3)\n"          // tail->next = a
@@ -90,11 +101,11 @@ Node *mergeSortedLists(Node *a, Node *b) {
         "6:\n"
         "mv %0, t2\n"             // 返回結果鏈表頭部
 
-        : "=r"(result)            // 輸出變數 (用 result 取代 a0)
+        : "=r"(result)            // 輸出變數
         : "r"(a), "r"(b)          // 輸入變數
-        : "t0", "t1", "t2", "t3", "t4", "t5", "t6", "memory"  // 受影響的暫存器
+        : "t0", "t1", "t2", "t3", "t4", "t5", "t6", "memory"
     );
-    
+
     return result;
 }
 
@@ -146,13 +157,7 @@ int main(int argc, char *argv[]) {
     cur = head;
     while (cur) {
         printf("%d ", cur->data);
-        asm volatile(
-            "ld t0, 8(%0)\n"          // 正確的偏移量: t0 = cur->next (加載 cur 的下一個節點)
-            "mv %0, t0\n"             // 更新 cur，指向下一個節點
-            : "=r"(cur)               // 更新 cur
-            : "0"(cur)                // 輸入 cur
-            : "t0"                    // 使用的暫存器
-        );
+        moveToNextNode(&cur);  // 使用內聯組合語言移動指針
     }
     printf("\n");
 
