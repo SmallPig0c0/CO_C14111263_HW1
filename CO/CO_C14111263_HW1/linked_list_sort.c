@@ -23,16 +23,16 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
         "lw t5, 4(t4)\n"          // t5 = fast->next->next
         "beqz t5, 2f\n"           // 如果 fast->next->next == NULL，跳到結束
 
-        // 更新指針位置
-        "mv t3, t1\n"             // prev = slow
+        // 移動 slow 和 fast 指針
+        "mv t3, t1\n"             // prev = slow (儲存 slow 目前的位置)
         "lw t1, 4(t1)\n"          // slow = slow->next
-        "mv t2, t5\n"             // fast = fast->next->next
+        "lw t2, 4(t4)\n"          // fast = fast->next->next
 
         "j 1b\n"                  // 繼續迴圈
 
         "2:\n"
         "beqz t3, 3f\n"           // 如果 prev == NULL，則不需要斷開 (鏈結不足以拆分)
-        "sw zero, 4(t3)\n"        // prev->next = NULL，分割兩半
+        "sw zero, 4(t3)\n"        // prev->next = NULL，切斷鏈表
 
         "3:\n"
         "mv %0, t0\n"             // firstHalf = head
@@ -43,6 +43,7 @@ void splitList(Node *head, Node **firstHalf, Node **secondHalf) {
         : "t0", "t1", "t2", "t3", "t4", "t5"
     );
 }
+
 
 // Function to print the linked list
 void printList(Node *head) {
