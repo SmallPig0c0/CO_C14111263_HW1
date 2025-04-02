@@ -141,10 +141,10 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < list_size; i++) {
         fscanf(input, "%d", &cur->data);
-        if (i + 1 < list_size) {
+        if (i + 1 < list_size) 
             cur->next = (Node*)malloc(sizeof(Node));
-            cur = cur->next;
-        }
+        cur = cur->next;
+        
     }
     fclose(input);
 
